@@ -1,138 +1,825 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Phoenix - Daily Challenges</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(45deg, #ff8c00, #0080ff);
-            color: white;
-            padding: 20px;
-        }
-        .challenge-container {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 15px;
-            margin-bottom: 10px;
-        }
-        .challenge-container.completed {
-            text-decoration: line-through;
-            color: lightgreen;
-        }
-        .streak {
-            font-size: 1.5em;
-            margin: 20px 0;
-        }
-        .btn {
-            background: #007BFF;
-            color: white;
-            border: none;
-            padding: 10px;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 5px;
-        }
-        .btn.complete {
-            background: #28a745;
-        }
-        .btn.reset {
-            background: #dc3545;
-        }
-    </style>
-</head>
-<body>
-    <h1>Daily Challenges</h1>
-    <div id="challenge-list"></div>
-    <div class="streak" id="streak">Current Streak: 0 days</div>
-    <button class="btn reset" id="reset">Reset Challenges</button>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Phoenix - Daily Challenges</title>
+  
+  <!-- Font Awesome for Icons -->
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
+    integrity="sha512-papmBksT9IjcZ+9dZxjH6FGMn5kEJ8j5IhKZrhJwTUSQ6D4sL8T3UibvXBo2tB7R8MQxZQ9Gwh+JzgFJxk96ag=="
+    crossorigin="anonymous"
+    referrerpolicy="no-referrer"
+  />
 
-    <script>
-        let challenges = JSON.parse(localStorage.getItem("challenges")) || [];
-        let completedChallenges = JSON.parse(localStorage.getItem("completedChallenges")) || [];
-        let streak = parseInt(localStorage.getItem("streak")) || 0;
+  <!-- Embedded CSS -->
+  <style>
+    /* Google Fonts: Roboto */
+    @import url('https://fonts.googleapis.com/css?family=Roboto:400,700&display=swap');
 
-        const easyChallengeList = [
-            "Do 10 push-ups", "Meditate for 5 minutes", "Write a short gratitude list",
-            "Take a 10-minute walk", "Drink 8 glasses of water today", "Read 10 pages of a book"
-        ];
+    /* Global Styles */
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: 'Roboto', sans-serif;
+      height: 100%;
+      width: 100%;
+      overflow: hidden;
+    }
 
-        const normalChallengeList = [
-            "Run 5 kilometers", "Do 50 push-ups throughout the day", "Meditate for 15 minutes",
-            "Write a 1000-word short story", "Learn and perform a simple magic trick"
-        ];
+    /* Background Gradient */
+    .bg-gradient {
+      min-height: 100vh;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      transition: background 0.5s;
+    }
 
-        const hardChallengeList = [
-            "Do 100 squats throughout the day", "Learn to juggle with 3 balls for 1 minute",
-            "Write a 3-page essay on a topic you're unfamiliar with"
-        ];
+    /* Gradient Colors */
+    .day-mode {
+      background: linear-gradient(to bottom right, #ff8c00, #0080ff);
+    }
 
-        function generateNewChallenges() {
-            const challengeList = [...easyChallengeList, ...normalChallengeList, ...hardChallengeList];
-            challenges = shuffleArray(challengeList).slice(0, 5);
-            completedChallenges = [];
-            localStorage.setItem("challenges", JSON.stringify(challenges));
-            localStorage.setItem("completedChallenges", JSON.stringify(completedChallenges));
-            renderChallenges();
+    .night-mode {
+      background: linear-gradient(to bottom right, #2c3e50, #4ca1af);
+    }
+
+    /* Swirling Stripe Animation */
+    .swirling-stripe {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(45deg, #ff8c00, #0080ff);
+      transform: translateX(-50%);
+      opacity: 0.3;
+      z-index: 0;
+      animation: swirl 20s infinite linear;
+      clip-path: polygon(0% 100%, 5% 0%, 10% 100%, 15% 0%, 20% 100%, 25% 0%, 30% 100%, 35% 0%, 40% 100%, 45% 0%, 50% 100%, 55% 0%, 60% 100%, 65% 0%, 70% 100%, 75% 0%, 80% 100%, 85% 0%, 90% 100%, 95% 0%, 100% 100%);
+    }
+
+    @keyframes swirl {
+      from {
+        transform: translateX(-50%) rotate(0deg);
+      }
+      to {
+        transform: translateX(-50%) rotate(360deg);
+      }
+    }
+
+    /* Main Content Styles */
+    .container {
+      position: relative;
+      z-index: 1;
+      color: white;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    h1, h2, h3 {
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+
+    .challenges, .streak, .revive, .settings, .developer-controls {
+      background: rgba(255, 255, 255, 0.8);
+      color: #333;
+      border-radius: 8px;
+      padding: 1rem;
+      margin-bottom: 1.5rem;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      transition: background 0.5s, color 0.5s;
+    }
+
+    .night-mode .challenges, 
+    .night-mode .streak, 
+    .night-mode .revive, 
+    .night-mode .settings, 
+    .night-mode .developer-controls {
+      background: rgba(50, 50, 50, 0.8);
+      color: #fff;
+    }
+
+    .challenge-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.5rem;
+      border-bottom: 1px solid #ddd;
+      transition: background 0.3s;
+    }
+
+    .night-mode .challenge-item {
+      border-bottom: 1px solid #555;
+    }
+
+    .challenge-item:last-child {
+      border-bottom: none;
+    }
+
+    .challenge-text {
+      flex-grow: 1;
+    }
+
+    .btn {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+      font-weight: bold;
+      margin-left: 0.5rem;
+    }
+
+    .btn-complete {
+      background-color: #3498db;
+      color: #fff;
+    }
+
+    .btn-complete:hover {
+      background-color: #2980b9;
+    }
+
+    .btn-reset {
+      background-color: #e74c3c;
+      color: #fff;
+    }
+
+    .btn-reset:hover {
+      background-color: #c0392b;
+    }
+
+    .btn-settings {
+      background-color: #3498db;
+      color: #fff;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .btn-settings:hover {
+      background-color: #2980b9;
+    }
+
+    .btn-toggle {
+      padding: 0.5rem 1rem;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      transition: background 0.3s;
+      font-weight: bold;
+      margin-top: 0.5rem;
+    }
+
+    .btn-toggle.enable {
+      background-color: #2ecc71;
+      color: #fff;
+    }
+
+    .btn-toggle.disable {
+      background-color: #e74c3c;
+      color: #fff;
+    }
+
+    .btn-toggle:hover.enable {
+      background-color: #27ae60;
+    }
+
+    .btn-toggle:hover.disable {
+      background-color: #c0392b;
+    }
+
+    .toast {
+      position: fixed;
+      bottom: 1rem;
+      right: 1rem;
+      background-color: rgba(0, 0, 0, 0.8);
+      color: #fff;
+      padding: 0.75rem 1.25rem;
+      border-radius: 4px;
+      box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      z-index: 1000;
+      animation: fadein 0.5s, fadeout 0.5s 2.5s;
+    }
+
+    @keyframes fadein {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes fadeout {
+      from { opacity: 1; }
+      to { opacity: 0; }
+    }
+
+    /* Responsive Design */
+    @media (max-width: 600px) {
+      .challenge-item {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+
+      .btn {
+        margin-left: 0;
+        margin-top: 0.5rem;
+      }
+
+      .btn-settings {
+        flex-direction: column;
+      }
+    }
+  </style>
+
+  <!-- Embedded JavaScript -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // State Variables
+      let challenges = JSON.parse(localStorage.getItem("challenges")) || [];
+      let completedChallenges = JSON.parse(localStorage.getItem("completedChallenges")) || [];
+      let streak = parseInt(localStorage.getItem("streak")) || 0;
+      let difficulty = localStorage.getItem("difficulty") || "normal";
+      let nightMode = JSON.parse(localStorage.getItem("nightMode")) || false;
+      let isSettingsOpen = false;
+      let canChangeDifficulty = completedChallenges.length === 0;
+      let canReviveStreak = false;
+      let settingsClickCount = 0;
+      let developerMode = false;
+      let devModeTimer = null;
+      let lastSettingsClickTime = 0;
+      let previousStreak = 0;
+      let lastCompletedDifficulty = localStorage.getItem("lastCompletedDifficulty") || "normal";
+      let toastTimeout = null;
+
+      // Challenge Lists
+      const easyChallengeList = [
+        "Do 10 push-ups",
+        "Meditate for 5 minutes",
+        "Write a short gratitude list",
+        "Take a 10-minute walk",
+        "Drink 8 glasses of water today",
+        "Read 10 pages of a book",
+        "Do 20 jumping jacks",
+        "Write a kind message to a friend",
+        "Stretch for 5 minutes",
+        "Learn 3 new words in a foreign language",
+        "Take 3 deep breaths",
+        "Tidy up one small area in your home",
+        "Listen to a new song",
+        "Do a 5-minute plank",
+        "Write down 3 goals for the week",
+        "Try a new healthy recipe",
+        "Do 15 squats",
+        "Compliment someone",
+        "Take a power nap",
+        "Draw a simple sketch",
+        "Practice good posture for 10 minutes",
+        "Learn a new joke",
+        "Do 10 minutes of yoga",
+        "Write a haiku",
+        "Take a cold shower for 30 seconds",
+        "Do 25 sit-ups",
+        "Learn to say 'thank you' in 3 languages",
+        "Declutter your desk",
+        "Take a photo of something beautiful",
+        "Do 10 lunges on each leg",
+        "Write down 3 things you're grateful for",
+        "Try a new fruit or vegetable",
+        "Do 30 seconds of jump rope",
+        "Learn a magic trick",
+        "Meditate for 10 minutes",
+        "Do 20 arm circles",
+        "Write a short story in 6 words",
+        "Take a 15-minute nature walk",
+        "Do 10 burpees",
+        "Learn to count to 10 in a new language",
+        "Do a 1-minute wall sit",
+        "Write a positive affirmation",
+        "Try a new tea or coffee",
+        "Do 20 mountain climbers",
+        "Practice mindful eating for one meal",
+        "Learn 5 capitals of countries",
+        "Do 10 tricep dips",
+        "Write a letter to your future self",
+        "Take 5 minutes to practice deep breathing",
+        "Do 15 calf raises",
+        "Learn a new constellation",
+        "Try a 5-minute meditation",
+        "Do 20 high knees",
+        "Write down a new idea",
+        "Take a technology break for 30 minutes",
+        "Do 10 shoulder shrugs",
+        "Learn a new stretching exercise",
+        "Write a short poem",
+        "Do 15 bicycle crunches",
+        "Try a new healthy snack",
+        "Learn to tie a new knot",
+        "Do 10 leg raises",
+        "Write down a personal strength",
+        "Take a 5-minute dance break",
+        "Do 20 Russian twists",
+        "Learn a new origami shape",
+        "Try oil pulling for 5 minutes",
+        "Do 15 push-up holds",
+        "Write a thank-you note",
+        "Take a 10-minute power nap",
+        "Do 20 bodyweight squats",
+        "Learn 3 new facts about space",
+        "Try a new breathing technique",
+        "Do 10 superman holds",
+        "Write down a childhood memory",
+        "Take a 5-minute break to look at nature",
+        "Do 15 glute bridges",
+        "Learn to say a tongue twister",
+        "Try a new way to prepare your coffee or tea",
+        "Do 20 jumping lunges",
+        "Write down a quote that inspires you",
+        "Take a 10-minute break to listen to calming music",
+        "Do 15 pike push-ups",
+        "Learn 3 new words in sign language",
+        "Try a new way to style your hair",
+        "Do 20 flutter kicks",
+        "Write down a small act of kindness you can do today",
+        "Take a 5-minute break to practice gratitude",
+        "Do 10 wall push-ups",
+        "Learn a new card trick",
+        "Try a new way to relax for 10 minutes",
+        "Do 15 reverse crunches",
+        "Write down a new habit you want to develop",
+        "Take a 10-minute break to declutter your phone",
+        "Do 20 lateral leg raises",
+        "Learn how to say 'peace' in 5 languages",
+        "Try a new 5-minute face massage technique",
+        "Do 10 cat-cow stretches",
+        "Write down a fear you want to overcome",
+        "Take a 5-minute break to practice positive self-talk",
+        "Do 15 arm scissors",
+        "Learn a new way to tie your shoes",
+        "Try a new 10-minute meditation technique",
+      ];
+
+      const normalChallengeList = [
+        "Run 5 kilometers",
+        "Do 50 push-ups throughout the day",
+        "Meditate for 15 minutes",
+        "Write a 1000-word short story",
+        "Learn and perform a simple magic trick",
+        "Do 50 burpees throughout the day",
+        "Read 50 pages of a book",
+        "Fast for 12 hours (including sleep time)",
+        "Learn to juggle with 3 balls for 1 minute",
+        "Do 20 pull-ups throughout the day",
+        "Write and practice a 2-minute comedy routine",
+        "Complete a 500-piece puzzle",
+        "Learn to solve a 3x3 Rubik's cube",
+        "Hold a plank for 3 minutes (can be split)",
+        "Learn to play a simple song on an instrument",
+        "Bike for 10 miles",
+        "Write 10 handwritten letters to friends or family",
+        "Do 500 jump ropes",
+        "Learn to say 'hello' in 10 different languages",
+        "Take a 2-minute cold shower",
+        "Do 100 squats throughout the day",
+        "Create a simple personal website",
+        "Learn and perform a 1-minute dance routine",
+        "Complete a 500-calorie workout",
+        "Write a 3-page essay on a topic you're unfamiliar with",
+        "Do a 6-hour technology detox",
+        "Practice writing with your non-dominant hand for 15 minutes",
+        "Write a 500-word gratitude journal entry",
+        "Do 30 minutes of high-intensity interval training",
+        "Cook a new recipe from scratch",
+        "Avoid added sugar for 12 hours",
+        "Do 200 crunches throughout the day",
+        "Practice typing for 30 minutes to improve speed",
+        "Meditate for 30 minutes (can be split)",
+        "Do a workout with 50 push-ups, 50 squats, and 50 sit-ups",
+        "Learn to fold 10 different origami shapes",
+        "Write and publish a short blog post",
+        "Walk 10 miles throughout the day",
+        "Solve a challenging crossword puzzle",
+        "Say 'yes' to every request for 6 hours (within reason)",
+        "Declutter one room in your living space",
+        "Memorize and recite a 2-minute monologue",
+        "Do 200 kettlebell swings throughout the day",
+        "Write a 2000-word short story",
+        "Eat only unprocessed foods for a day",
+        "Learn to identify 20 different bird species",
+        "Do 50 box jumps",
+        "Perform 12 random acts of kindness",
+        "Learn to solve a Sudoku puzzle",
+        "Do a 1-hour workout",
+        "Write lyrics for an original song",
+        "Complete a 500-word stream of consciousness writing",
+        "Draw a self-portrait",
+        "Do 10 handstand push-ups (wall-assisted if needed)",
+        "Donate or recycle 20 items you no longer need",
+        "Memorize the first 20 elements of the periodic table",
+        "Study a new subject for 3 hours",
+        "Write a letter to your future self",
+        "Take 50 unique photographs",
+        "Learn to solve a 2x2 Rubik's cube",
+        "Do 200 lunges throughout the day",
+        "Practice mindfulness for 2 hours",
+        "Learn to identify 10 constellations",
+        "Read 100 pages in a day",
+        "Write a 25-item bucket list",
+        "Do a 1-hour yoga session",
+        "Learn basic calligraphy",
+        "Do 20 one-arm push-ups (10 per arm)",
+        "Try a new diet for a day (e.g., vegan, keto)",
+        "Solve 5 riddles or brain teasers",
+        "Meditate for 1 hour (can be split)",
+        "Write a 1000-word personal essay",
+        "Wake up at 5 AM and be productive for 12 hours",
+        "Learn to identify 20 different types of clouds",
+        "Do 200 box jumps throughout the day",
+        "Practice silence for 6 hours",
+        "Learn the basic rules of chess and play a game",
+        "Do 1 hour of continuous stretching",
+        "Write a 10-page autobiography",
+        "Avoid all added sugar for a day",
+        "Learn to identify 30 different plant species",
+        "Do 30 muscle-ups throughout the day",
+        "Complete a 16-hour fast (including sleep time)",
+        "Memorize and recite a famous 5-minute speech",
+        "Take 5 cold showers throughout the day",
+        "Write a script for a short film",
+        "Avoid alcohol for 24 hours",
+        "Learn to play 3 songs on a musical instrument",
+        "Do 200 pistol squats throughout the day (100 per leg)",
+        "Limit electronic device use to 2 hours",
+        "Give a 10-minute presentation on a topic with 5 minutes prep",
+        "Exercise for 3 hours (can be split)",
+        "Write a collection of 10 poems",
+        "Complete a 12-hour body transformation challenge",
+        "Learn to create an intermediate origami model",
+        "Do 1,000 push-ups in a day",
+        "Write a 3,000-word journal entry",
+        "Learn to solve a 4x4 Rubik's cube",
+        "Run a half-marathon (13.1 miles)",
+        "Write an outline for an academic paper",
+        "Take 300 photographs in a day",
+      ];
+
+      const hardChallengeList = normalChallengeList; // As per original code
+
+      // Utility Functions
+      function showToast(message) {
+        const existingToast = document.querySelector('.toast');
+        if (existingToast) {
+          existingToast.remove();
+          clearTimeout(toastTimeout);
+        }
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+        toastTimeout = setTimeout(() => {
+          toast.classList.add('fadeout');
+          toast.addEventListener('animationend', () => toast.remove());
+        }, 3000);
+      }
+
+      function triggerAdLink() {
+        // Simulate the ad link click
+        let adLink = document.createElement("a");
+        adLink.href = "https://phoenix.created.app/"; // Placeholder URL
+        adLink.target = "_self";
+        adLink.style.display = "none";
+        document.body.appendChild(adLink);
+        adLink.click();
+        adLink.remove();
+
+        // Redirect to desired page after ad click
+        window.location.href = "https://phoenix.created.app"; // Your website URL
+      }
+
+      function generateNewChallenges(newDifficulty = difficulty) {
+        let challengeList;
+        let numChallenges;
+
+        switch (newDifficulty) {
+          case "easy":
+            challengeList = easyChallengeList;
+            numChallenges = Math.floor(Math.random() * 3) + 1; // 1 to 3 challenges
+            break;
+          case "normal":
+            challengeList = normalChallengeList;
+            numChallenges = Math.floor(Math.random() * 3) + 3; // 3 to 5 challenges
+            break;
+          case "hard":
+            challengeList = hardChallengeList;
+            numChallenges = Math.floor(Math.random() * 3) + 5; // 5 to 7 challenges
+            break;
+          default:
+            challengeList = normalChallengeList;
+            numChallenges = Math.floor(Math.random() * 3) + 3;
         }
 
-        function shuffleArray(array) {
-            return array.sort(() => Math.random() - 0.5);
-        }
+        const shuffled = shuffleArray([...challengeList]);
+        challenges = shuffled.slice(0, numChallenges);
+        completedChallenges = [];
+        canChangeDifficulty = true;
+        difficulty = newDifficulty;
+        localStorage.setItem("challenges", JSON.stringify(challenges));
+        localStorage.setItem("completedChallenges", JSON.stringify(completedChallenges));
+        localStorage.setItem("difficulty", difficulty);
+        renderChallenges();
+        renderStreak();
+        renderSettings();
+      }
 
-        function completeChallenge(index) {
-            if (!completedChallenges.includes(index)) {
-                completedChallenges.push(index);
-                localStorage.setItem("completedChallenges", JSON.stringify(completedChallenges));
-                if (completedChallenges.length === challenges.length) {
-                    streak++;
-                    localStorage.setItem("streak", streak);
-                }
-                renderChallenges();
-                renderStreak();
-            }
+      function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [array[i], array[j]] = [array[j], array[i]];
         }
+        return array;
+      }
 
-        function resetChallenges() {
-            localStorage.clear();
+      function checkStreak() {
+        const today = new Date().toDateString();
+        const lastChecked = localStorage.getItem("lastChecked");
+
+        if (lastChecked !== today) {
+          if (completedChallenges.length !== challenges.length) {
+            previousStreak = streak;
             streak = 0;
-            generateNewChallenges();
-            renderStreak();
+            canReviveStreak = true;
+            showToast(`Streak reset from ${previousStreak} days.`);
+          } else {
+            updateStreak();
+          }
+          generateNewChallenges();
+          localStorage.setItem("lastChecked", today);
+          renderStreak();
+          renderChallenges();
         }
+      }
 
-        function renderChallenges() {
-            const challengeListElement = document.getElementById("challenge-list");
-            challengeListElement.innerHTML = "";
-            challenges.forEach((challenge, index) => {
-                const challengeDiv = document.createElement("div");
-                challengeDiv.className = "challenge-container";
-                challengeDiv.textContent = challenge;
-                if (completedChallenges.includes(index)) {
-                    challengeDiv.classList.add("completed");
-                } else {
-                    const completeButton = document.createElement("button");
-                    completeButton.className = "btn complete";
-                    completeButton.textContent = "Complete";
-                    completeButton.onclick = () => completeChallenge(index);
-                    challengeDiv.appendChild(completeButton);
-                }
-                challengeListElement.appendChild(challengeDiv);
-            });
+      function updateStreak() {
+        streak += 1;
+        localStorage.setItem("streak", streak.toString());
+        canReviveStreak = false;
+        lastCompletedDifficulty = difficulty;
+        localStorage.setItem("lastCompletedDifficulty", difficulty);
+        localStorage.setItem("lastChecked", new Date().toDateString());
+        showToast(`Streak updated to ${streak} days!`);
+        renderStreak();
+      }
+
+      function toggleChallenge(index) {
+        if (!completedChallenges.includes(index)) {
+          if (confirm("Are you sure you've completed this challenge?")) {
+            completedChallenges.push(index);
+            localStorage.setItem("completedChallenges", JSON.stringify(completedChallenges));
+            if (completedChallenges.length === challenges.length) {
+              updateStreak();
+            }
+            renderChallenges();
+          }
         }
+      }
 
-        function renderStreak() {
-            document.getElementById("streak").textContent = `Current Streak: ${streak} days`;
+      function resetChallenge(index) {
+        if (developerMode) {
+          completedChallenges = completedChallenges.filter(i => i !== index);
+          canReviveStreak = false;
+          localStorage.setItem("completedChallenges", JSON.stringify(completedChallenges));
+          renderChallenges();
+          renderStreak();
         }
+      }
 
-        document.getElementById("reset").onclick = resetChallenges;
+      function handleDifficultyChange(newDifficulty) {
+        if (canChangeDifficulty) {
+          if (newDifficulty === difficulty) {
+            alert("You are already at this difficulty level.");
+          } else {
+            const confirmChange = confirm(`Changing difficulty will reset your streak to 0. Are you sure you want to change to ${newDifficulty} difficulty?`);
+            if (confirmChange) {
+              streak = 0;
+              localStorage.setItem("streak", streak.toString());
+              generateNewChallenges(newDifficulty);
+              showToast(`Difficulty changed to ${newDifficulty}. Streak reset to 0.`);
+            }
+          }
+        } else {
+          alert("You can't change the difficulty until tomorrow.");
+        }
+      }
 
-        // Initialize the app
-        if (challenges.length === 0) {
-            generateNewChallenges();
+      function toggleSettings() {
+        isSettingsOpen = !isSettingsOpen;
+        document.getElementById('settings').style.display = isSettingsOpen ? 'block' : 'none';
+        const currentTime = Date.now();
+        if (currentTime - lastSettingsClickTime < 500) {
+          settingsClickCount += 1;
+          if (settingsClickCount >= 4) {
+            developerMode = true;
+            showToast("Developer mode activated!");
+          }
+        } else {
+          settingsClickCount = 1;
+        }
+        lastSettingsClickTime = currentTime;
+      }
+
+      function resetEverything() {
+        if (confirm("Are you sure you want to reset everything? This action cannot be undone.")) {
+          localStorage.clear();
+          challenges = [];
+          completedChallenges = [];
+          streak = 0;
+          previousStreak = 0;
+          canChangeDifficulty = true;
+          canReviveStreak = false;
+          difficulty = "normal";
+          nightMode = false;
+          developerMode = false;
+          isSettingsOpen = false;
+          settingsClickCount = 0;
+          lastSettingsClickTime = 0;
+          lastCompletedDifficulty = "normal";
+          generateNewChallenges("normal");
+          showToast("Everything has been reset to default settings.");
+        }
+      }
+
+      function toggleNightMode() {
+        nightMode = !nightMode;
+        localStorage.setItem("nightMode", JSON.stringify(nightMode));
+        applyNightMode();
+      }
+
+      function applyNightMode() {
+        const bg = document.querySelector('.bg-gradient');
+        if (nightMode) {
+          bg.classList.remove('day-mode');
+          bg.classList.add('night-mode');
+        } else {
+          bg.classList.remove('night-mode');
+          bg.classList.add('day-mode');
         }
         renderChallenges();
         renderStreak();
-    </script>
+        renderSettings();
+      }
+
+      function simulateDayPassing() {
+        if (developerMode) {
+          if (completedChallenges.length !== challenges.length) {
+            previousStreak = streak;
+            streak = 0;
+            canReviveStreak = true;
+            showToast(`Streak reset from ${previousStreak} days.`);
+          }
+          generateNewChallenges();
+          localStorage.setItem("lastChecked", new Date().toDateString());
+        }
+      }
+
+      function renderChallenges() {
+        const challengesDiv = document.getElementById('challenges');
+        challengesDiv.innerHTML = '<h2>Today\'s Challenges</h2>';
+        challenges.forEach((challenge, index) => {
+          const challengeItem = document.createElement('div');
+          challengeItem.className = 'challenge-item';
+
+          const challengeText = document.createElement('span');
+          challengeText.className = 'challenge-text';
+          challengeText.textContent = challenge;
+          challengeItem.appendChild(challengeText);
+
+          if (completedChallenges.includes(index)) {
+            const checkMark = document.createElement('span');
+            checkMark.textContent = '✓';
+            checkMark.style.color = 'green';
+            checkMark.style.fontSize = '1.5rem';
+            challengeItem.appendChild(checkMark);
+          } else {
+            const completeBtn = document.createElement('button');
+            completeBtn.className = 'btn btn-complete';
+            completeBtn.textContent = 'Complete';
+            completeBtn.addEventListener('click', () => toggleChallenge(index));
+            challengeItem.appendChild(completeBtn);
+
+            if (developerMode) {
+              const resetBtn = document.createElement('button');
+              resetBtn.className = 'btn btn-reset';
+              resetBtn.textContent = 'Reset';
+              resetBtn.addEventListener('click', () => resetChallenge(index));
+              challengeItem.appendChild(resetBtn);
+            }
+          }
+
+          challengesDiv.appendChild(challengeItem);
+        });
+      }
+
+      function renderStreak() {
+        const streakDiv = document.getElementById('streak');
+        streakDiv.innerHTML = `
+          <h2>Your Streak</h2>
+          <p>${streak} days</p>
+        `;
+      }
+
+      function renderSettings() {
+        const settingsDiv = document.getElementById('settings-content');
+        settingsDiv.innerHTML = `
+          <h2>Settings</h2>
+          <div>
+            <label>Difficulty:</label>
+            <div>
+              <button class="btn ${difficulty === 'easy' ? 'btn-complete' : 'btn-reset'}" ${!canChangeDifficulty ? 'disabled' : ''} onclick="handleDifficultyChange('easy')">Easy</button>
+              <button class="btn ${difficulty === 'normal' ? 'btn-complete' : 'btn-reset'}" ${!canChangeDifficulty ? 'disabled' : ''} onclick="handleDifficultyChange('normal')">Normal</button>
+              <button class="btn ${difficulty === 'hard' ? 'btn-complete' : 'btn-reset'}" ${!canChangeDifficulty ? 'disabled' : ''} onclick="handleDifficultyChange('hard')">Hard</button>
+            </div>
+          </div>
+          ${!canChangeDifficulty ? '<p>You can\'t change the difficulty until tomorrow.</p>' : ''}
+          <div>
+            <label>Night Mode:</label>
+            <button class="btn-toggle ${nightMode ? 'disable' : 'enable'}" onclick="toggleNightMode()">
+              ${nightMode ? 'Disable' : 'Enable'} Night Mode
+            </button>
+          </div>
+          <button class="btn btn-reset" onclick="resetEverything()">Reset Everything</button>
+          ${developerMode ? `
+            <div class="developer-controls">
+              <h3>Developer Controls</h3>
+              <div>
+                <label>Set Streak:</label>
+                <input type="number" id="dev-streak-input" value="${streak}" min="0" />
+                <button class="btn btn-complete" onclick="setStreak()">Set</button>
+              </div>
+              <button class="btn btn-complete" onclick="simulateDayPassing()">Simulate Day Passing</button>
+            </div>
+          ` : ''}
+        `;
+      }
+
+      // Expose functions to global scope for inline event handlers
+      window.handleDifficultyChange = handleDifficultyChange;
+      window.toggleNightMode = toggleNightMode;
+      window.resetEverything = resetEverything;
+      window.simulateDayPassing = simulateDayPassing;
+      window.setStreak = () => {
+        const newStreak = parseInt(document.getElementById('dev-streak-input').value);
+        if (!isNaN(newStreak) && newStreak >= 0) {
+          streak = newStreak;
+          localStorage.setItem("streak", streak.toString());
+          canReviveStreak = false;
+          renderStreak();
+          renderChallenges();
+          showToast(`Streak set to ${streak} days.`);
+        } else {
+          alert("Please enter a valid number.");
+        }
+      };
+
+      // Initial Render
+      applyNightMode();
+      renderChallenges();
+      renderStreak();
+      renderSettings();
+      checkStreak();
+
+      // Event Listeners
+      document.getElementById('settings-btn').addEventListener('click', toggleSettings);
+    });
+  </script>
+</head>
+<body>
+  <div class="bg-gradient day-mode">
+    <div class="swirling-stripe"></div>
+    <div class="container">
+      <h1>Daily Challenges</h1>
+
+      <div class="challenges" id="challenges">
+        <!-- Challenges will be rendered here -->
+      </div>
+
+      <div class="streak" id="streak">
+        <!-- Streak will be rendered here -->
+      </div>
+
+      <button class="btn btn-complete" id="settings-btn">
+        <i class="fas fa-cog"></i> Settings
+      </button>
+
+      <div class="settings" id="settings" style="display: none;">
+        <div id="settings-content">
+          <!-- Settings will be rendered here -->
+        </div>
+      </div>
+    </div>
+  </div>
 </body>
 </html>
