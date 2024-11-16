@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phoenix - Daily Challenges</title>
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            let challenges = JSON.parse(localStorage.getItem("challenges")) || [];
+            let completedChallenges = JSON.parse(localStorage.getItem("completedChallenges")) || [];
+            let streak = parseInt(localStorage.getItem("streak")) || 0;
+            let difficulty = localStorage.getItem("difficulty") || "normal";
+
+            // Challenge lists
+            const easyChallengeList = [
+                "Do 10 push-ups", "Meditate for 5 minutes", "Write a short gratitude list", 
+                "Take a 10-minute walk", "Drink 8 glasses of water today", "Read 10 pages of a book", 
+                "Do 20 jumping jacks", "Write a kind message to a friend", "Stretch for 5 minutes", 
+                "Learn 3 new words in a foreign language", "Take 3 deep breaths", "Tidy up one small area in your home",
+                "Listen to a new song", "Do a 5-minute plank", "Write down 3 goals for the week",
+                "Try a new healthy recipe", "Do 15 squats", "Compliment someone", "Take a power nap",
+                "Draw a simple sketch", "Practice good posture for 10 minutes", "Learn a new joke", 
+                "Do 10 minutes of yoga", "Write a haiku", "Take a cold shower for 30 seconds", 
+                "Do 25 sit-ups", "Learn to say 'thank you' in 3 languages", "Declutter your desk", 
+                "Take a photo of something beautiful", "Do 10 lunges on each leg", 
+                "Write down 3 things you're grateful for", "Try a new fruit or vegetable", 
+                "Do 30 seconds of jump rope", "Learn a magic trick", "Meditate for 10 minutes"
+            ];
+
+            const normalChallengeList = [
+                "Run 5 kilometers", "Do 50 push-ups throughout the day", "Meditate for 15 minutes", 
+                "Write a 1000-word short story", "Learn and perform a simple magic trick", 
+                "Do 50 burpees throughout the day", "Read 50 pages of a book", "Fast for 12 hours", 
+                "Learn to juggle with 3 balls for 1 minute", "Do 20 pull-ups throughout the day",
+                "Write and practice a 2-minute comedy routine", "Complete a 500-piece puzzle", 
+                "Learn to solve a 3x3 Rubik's cube", "Hold a plank for 3 minutes", 
+                "Learn to play a simple song on an instrument", "Bike for 10 miles", 
+                "Write 10 handwritten letters to friends or family", "Do 500 jump ropes"
+            ];
+
+            const hardChallengeList = normalChallengeList;
+
+            // Generate challenges
+            function generateNewChallenges(newDifficulty = difficulty) {
+                let challengeList;
+                switch (newDifficulty) {
+                    case "easy":
+                        challengeList = easyChallengeList;
+                        break;
+                    case "normal":
+                        challengeList = normalChallengeList;
+                        break;
+                    case "hard":
+                        challengeList = hardChallengeList;
+                        break;
+                    default:
+                        challengeList = normalChallengeList;
+                }
+                challenges = shuffleArray(challengeList).slice(0, 5); // Randomly pick 5 challenges
+                completedChallenges = [];
+                difficulty = newDifficulty;
+                localStorage.setItem("challenges", JSON.stringify(challenges));
+                localStorage.setItem("completedChallenges", JSON.stringify(completedChallenges));
+                localStorage.setItem("difficulty", difficulty);
+                renderChallenges();
+            }
+
+            // Shuffle array helper function
+            function shuffleArray(array) {
+                return array.sort(() => Math.random() - 0.5);
+            }
+
+            // Update streak
+            function updateStreak() {
+                streak += 1;
+                localStorage.setItem("streak", streak.toString());
+                renderStreak();
+            }
+
+            // Render challenges
+            function renderChallenges() {
+                const challengeContainer = document.getElementById("challenges");
+                challengeContainer.innerHTML = "";
+                challenges.forEach((challenge, index) => {
+                    const challengeElement = document.createElement("div");
+                    challengeElement.textContent = challenge;
+                    if (completedChallenges.includes(index)) {
+                        challengeElement.style.textDecoration = "line-through";
+                        challengeElement.style.color = "green";
+                    } else {
+                        const completeButton = document.createElement("button");
+                        completeButton.textContent = "Complete";
+                        completeButton.onclick = function() {
+                            completedChallenges.push(index);
+                            localStorage.setItem("completedChallenges", JSON.stringify(completedChallenges));
+                            if (completedChallenges.length === challenges.length) {
+                                updateStreak();
+                            }
+                            renderChallenges();
+                        };
+                        challengeElement.appendChild(completeButton);
+                    }
+                    challengeContainer.appendChild(challengeElement);
+                });
+            }
+
+            // Render streak
+            function renderStreak() {
+                const streakElement = document.getElementById("streak");
+                streakElement.textContent = `Current Streak: ${streak} days`;
+            }
+
+            // Initialize application
+            function init() {
+                if (challenges.length === 0) {
+                    generateNewChallenges();
+                }
+                renderChallenges();
+                renderStreak();
+            }
+
+            // Start the app
+            init();
+        });
+    </script>
+</head>
+<body>
+    <h1>Daily Challenges</h1>
+    <div id="challenges"></div>
+    <div id="streak"></div>
+</body>
+</html>
