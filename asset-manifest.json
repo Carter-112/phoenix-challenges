@@ -1,0 +1,15 @@
+{
+  "files": {
+    "main.css": "/Carter-112/todo-list-react.git/static/css/main.25e23449.css",
+    "main.js": "/Carter-112/todo-list-react.git/static/js/main.20a5131e.js",
+    "static/js/453.ac79db8d.chunk.js": "/Carter-112/todo-list-react.git/static/js/453.ac79db8d.chunk.js",
+    "index.html": "/Carter-112/todo-list-react.git/index.html",
+    "main.25e23449.css.map": "/Carter-112/todo-list-react.git/static/css/main.25e23449.css.map",
+    "main.20a5131e.js.map": "/Carter-112/todo-list-react.git/static/js/main.20a5131e.js.map",
+    "453.ac79db8d.chunk.js.map": "/Carter-112/todo-list-react.git/static/js/453.ac79db8d.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.25e23449.css",
+    "static/js/main.20a5131e.js"
+  ]
+}
